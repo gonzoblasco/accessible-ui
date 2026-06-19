@@ -41,16 +41,21 @@ interface ListProps {
 }
 
 function List({ children, className }: ListProps) {
-  const { orientation, tabs, activeId, setActiveId, getTabId } = useTabsContext()
+  const { orientation, tabs, getTabId } = useTabsContext()
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLDivElement>) => {
       const enabledTabs = tabs.filter((t) => !t.disabled)
-      const currentIdx = enabledTabs.findIndex((t) => t.id === activeId)
 
       const isHorizontal = orientation === 'horizontal'
       const prevKey = isHorizontal ? 'ArrowLeft' : 'ArrowUp'
       const nextKey = isHorizontal ? 'ArrowRight' : 'ArrowDown'
+
+      const focusedEl = document.activeElement
+      const currentIdx = enabledTabs.findIndex(
+        (t) => document.getElementById(getTabId(t.id)) === focusedEl,
+      )
+      if (currentIdx === -1) return
 
       let nextIdx: number | null = null
 
@@ -66,13 +71,10 @@ function List({ children, className }: ListProps) {
 
       if (nextIdx !== null) {
         e.preventDefault()
-        const nextTab = enabledTabs[nextIdx]
-        setActiveId(nextTab.id)
-        // Move focus to the newly activated tab
-        document.getElementById(getTabId(nextTab.id))?.focus()
+        document.getElementById(getTabId(enabledTabs[nextIdx].id))?.focus()
       }
     },
-    [orientation, tabs, activeId, setActiveId, getTabId],
+    [orientation, tabs, getTabId],
   )
 
   return (
@@ -100,6 +102,14 @@ function Tab({ id, children, className, disabled }: TabProps) {
   const { activeId, setActiveId, getTabId, getPanelId } = useTabsContext()
   const isActive = activeId === id
 
+  const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
+    if (disabled) return
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      setActiveId(id)
+    }
+  }
+
   return (
     <button
       id={getTabId(id)}
@@ -110,6 +120,7 @@ function Tab({ id, children, className, disabled }: TabProps) {
       tabIndex={isActive ? 0 : -1}
       disabled={disabled}
       onClick={() => !disabled && setActiveId(id)}
+      onKeyDown={handleKeyDown}
       className={
         className ??
         [
