@@ -1,6 +1,6 @@
 # Tabs
 
-Headless tabs implementing the [ARIA tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/).
+Headless tabs implementing the [ARIA tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/) with **manual activation**.
 
 ## Usage
 
@@ -34,9 +34,15 @@ Roving tabindex is used: the active tab has `tabIndex=0`, all others have `-1`. 
 
 The critical difference: with `aria-activedescendant`, announcement of name and state depends on the screen reader's implementation of that attribute. With roving tabindex, real DOM focus moves to the selected tab, so the name + `aria-selected` announcement works across all screen readers without relying on `aria-activedescendant` support. APG documents both patterns as valid; roving tabindex has more consistent support in NVDA+Firefox and VoiceOver+Safari combinations.
 
-### Automatic activation vs manual activation
+### Manual activation (chosen) vs automatic activation
 
-Arrow keys activate the tab immediately (automatic activation). APG documents both patterns. Automatic activation matches the expectation users build from native patterns (browser tabs, OS tab controls). Manual activation — where arrows move focus without activating, and `Enter` or `Space` confirm — is the right choice when loading the panel has a meaningful cost (data fetch). To add manual activation, extend the hook to track a separate `focusedId` alongside `activeId`.
+Arrow keys move focus **without** activating the tab. Only `Enter` or `Space` confirm the selection and show the panel.
+
+**Why manual is more robust for screen reader users:** with automatic activation, moving focus immediately triggers the panel content to be announced. If the user is exploring tabs to decide which to open, each arrow keystroke interrupts them with panel content announcements. With manual activation, the user can browse tab labels silently and only commit when they press Enter/Space — matching how a screen reader user reads a list before choosing an item.
+
+APG documents both patterns as valid. The rule of thumb: automatic activation is fine when switching panels has no cost and no side effects. Manual activation is the safer default when there is any chance panels have loading states, animations, or screen reader users will want to explore before choosing.
+
+**Implementation:** the `List` `onKeyDown` handler uses `document.activeElement` to find the currently focused tab (which may differ from `activeId` after arrow navigation), then calls `.focus()` only. Each `Tab` has its own `onKeyDown` for Enter/Space that calls `setActiveId`. The `tabindex` attribute is still driven by `activeId` (0 for active, -1 for others), so pressing Tab leaves the tablist and returns to the active tab — not to wherever the user last moved focus with arrows.
 
 ### `aria-controls` on each tab
 
@@ -54,10 +60,11 @@ Inactive panels are not rendered (`return null`) rather than hidden with the `hi
 
 | Key | Behavior |
 |-----|----------|
-| `ArrowRight` / `ArrowDown` | Activate the next enabled tab (wrapping) |
-| `ArrowLeft` / `ArrowUp` | Activate the previous enabled tab (wrapping) |
-| `Home` | Activate the first enabled tab |
-| `End` | Activate the last enabled tab |
+| `ArrowRight` / `ArrowDown` | Move **focus** to the next enabled tab (wrapping) — does not activate |
+| `ArrowLeft` / `ArrowUp` | Move **focus** to the previous enabled tab (wrapping) — does not activate |
+| `Home` | Move **focus** to the first enabled tab — does not activate |
+| `End` | Move **focus** to the last enabled tab — does not activate |
+| `Enter` / `Space` | **Activate** the focused tab — shows its panel |
 | `Tab` | Leave the tablist and move to the active panel |
 | `Shift+Tab` | Leave the tablist backwards |
 
@@ -66,5 +73,6 @@ Inactive panels are not rendered (`return null`) rather than hidden with the `hi
 ## Alternatives Considered
 
 - **`aria-activedescendant`**: Rejected due to inconsistent support in NVDA+Firefox. See roving tabindex decision above.
-- **Manual activation**: Not implemented because there is no loading cost in this component. Documented here so the decision is obvious if the requirement changes.
+- **Automatic activation**: Rejected because manual activation is safer for screen reader users — they can explore tab labels without triggering panel announcements.
 - **`hidden` attribute on inactive panels**: Rejected because keeping the panel in the DOM with `hidden` can trigger `useEffect` and other lifecycle side effects in panel content unexpectedly.
+- **Separate `focusedId` state in `useTabs`**: Not needed — `document.activeElement` in the `List` handler tracks where keyboard focus is, keeping the hook simple.
