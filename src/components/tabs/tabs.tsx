@@ -102,9 +102,9 @@ function Tab({ id, children, className, disabled }: TabProps) {
   const { activeId, setActiveId, getTabId, getPanelId } = useTabsContext()
   const isActive = activeId === id
 
+  // Space→click is handled natively by the browser on <button>; only Enter needs explicit handling.
   const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
-    if (disabled) return
-    if (e.key === 'Enter' || e.key === ' ') {
+    if (e.key === 'Enter') {
       e.preventDefault()
       setActiveId(id)
     }
