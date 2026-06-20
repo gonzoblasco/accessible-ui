@@ -35,7 +35,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "chromatic": "chromatic --exit-zero-on-changes"
   },
   "devDependencies": {
     "react": "^19.2.6",
