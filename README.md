@@ -1,73 +1,71 @@
-# React + TypeScript + Vite
+# accessible-ui
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A headless accessible component library built with React and TypeScript.
 
-Currently, two official plugins are available:
+Each component exposes unstyled, composable primitives. You provide the class names — the library provides the ARIA semantics, keyboard navigation, and focus management.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Components
 
-## React Compiler
+- [Combobox](src/components/combobox/README.md) — Editable combobox with list autocomplete
+- [Modal](src/components/modal/README.md) — Focus-trapped dialog
+- [Tabs](src/components/tabs/README.md) — Keyboard-navigable tabbed interface
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Methodology
 
-## Expanding the ESLint configuration
+### Headless pattern
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Components ship with zero styles. Each primitive accepts `className` (and any standard HTML attribute) so the styling layer is entirely in your hands — Tailwind, CSS Modules, plain CSS. The behavior contract is the component's API; the visual contract is yours.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+State management is extracted into custom hooks (`useModal`, `useTabs`, `useCombobox`) that are returned to the consumer. This means:
+- You can read and react to state (e.g. show a badge when a panel is active).
+- You can extend behavior without forking the component.
+- Testing the logic layer is straightforward because the hooks are pure functions of their inputs.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### ARIA references
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Every component follows the [WAI-ARIA Authoring Practices Guide (APG)](https://www.w3.org/WAI/ARIA/apg/patterns/) pattern for its widget type:
+
+| Component | APG Pattern |
+|---|---|
+| Combobox | [Editable Combobox with List Autocomplete](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/) |
+| Modal | [Dialog (Modal)](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/) |
+| Tabs | [Tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/) |
+
+Where the APG offers multiple valid approaches (e.g. roving tabindex vs `aria-activedescendant`, manual vs automatic tab activation), each component's README documents which option was chosen and why — including the screen-reader and keyboard trade-offs that drove the decision.
+
+### Testing strategy
+
+Each component has three layers of tests in a co-located `*.test.tsx` file:
+
+1. **Rendering** — the correct ARIA roles, attributes, and DOM structure are present in the initial state.
+2. **Keyboard interaction** — `@testing-library/user-event` drives the keyboard sequences from the APG pattern table. Each row in the table has a corresponding test.
+3. **Accessibility audit** — `jest-axe` runs `axe-core` against the rendered output and asserts zero violations. This catches attribute omissions that are valid HTML but invalid ARIA (e.g. missing `aria-selected` on `role="option"`).
+
+Tests run in jsdom via Vitest. The `@testing-library/react` render utilities are used directly — no custom wrappers — so test setup is minimal and the tests read close to how a user interacts with the component.
+
+## Storybook
+
+Stories live alongside each component (`*.stories.tsx`). Each story:
+- Has a **Controls** panel wired to the component's configurable props.
+- Runs the **a11y addon** (`@storybook/addon-a11y`) to surface axe violations directly in the browser.
+- Includes a **Docs** description linking to the relevant APG pattern.
+
+```bash
+npm run storybook   # dev server on http://localhost:6006
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Development
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm test            # run all tests once
+npm run test:watch  # watch mode
+npm run storybook   # open Storybook
 ```
+
+## Stack
+
+- React 19, TypeScript
+- Vite (app bundler), Vitest (test runner)
+- Storybook 10 with addon-a11y and addon-docs
+- Tailwind CSS v4 (demo styles only — components are unstyled)

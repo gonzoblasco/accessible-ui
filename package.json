@@ -1,8 +1,31 @@
 {
-  "name": "pr01",
+  "name": "@gonzoblasco/accessible-ui",
+  "version": "0.1.0",
+  "description": "Headless accessible React components — Combobox, Modal, Tabs — following WAI-ARIA APG patterns",
+  "keywords": ["react", "accessibility", "aria", "headless", "combobox", "modal", "tabs", "a11y"],
+  "author": "Gonzalo Blasco",
+  "license": "MIT",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
+  "exports": {
+    "./combobox": {
+      "types": "./dist/components/combobox/combobox.d.ts",
+      "import": "./dist/components/combobox/combobox.js"
+    },
+    "./modal": {
+      "types": "./dist/components/modal/modal.d.ts",
+      "import": "./dist/components/modal/modal.js"
+    },
+    "./tabs": {
+      "types": "./dist/components/tabs/tabs.d.ts",
+      "import": "./dist/components/tabs/tabs.js"
+    }
+  },
+  "files": ["dist"],
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -14,11 +37,9 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
-  "dependencies": {
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6"
-  },
   "devDependencies": {
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "@chromatic-com/storybook": "^5.2.1",
     "@eslint/js": "^10.0.1",
     "@storybook/addon-a11y": "^10.4.6",

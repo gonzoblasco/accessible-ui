@@ -1,3 +1,5 @@
+/* @refresh reset */
+/* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
   useCallback,
@@ -78,6 +80,7 @@ function List({ children, className }: ListProps) {
   )
 
   return (
+    // eslint-disable-next-line jsx-a11y/interactive-supports-focus
     <div
       role="tablist"
       aria-orientation={orientation}
@@ -126,7 +129,7 @@ function Tab({ id, children, className, disabled }: TabProps) {
         [
           'px-4 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-600',
           isActive
-            ? 'border-b-2 border-violet-600 text-violet-600'
+            ? 'border-b-2 border-violet-600 text-violet-600 dark:border-violet-400 dark:text-violet-400'
             : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
           disabled ? 'cursor-not-allowed opacity-40' : '',
         ].join(' ')

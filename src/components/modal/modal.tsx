@@ -1,3 +1,5 @@
+/* @refresh reset */
+/* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
   useCallback,
@@ -140,12 +142,14 @@ function Content({ children, className, closeOnBackdropClick = true }: ContentPr
   if (!isOpen) return null
 
   return createPortal(
-    // Backdrop — not aria-hidden; screen readers must be able to reach the dialog inside
+    // Backdrop — purely visual; Escape on the dialog handles keyboard dismissal
     <div
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={handleBackdropClick}
     >
       {/* Dialog */}
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <div
         ref={dialogRef}
         role="dialog"

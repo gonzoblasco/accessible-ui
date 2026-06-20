@@ -2,6 +2,16 @@ import type { Preview } from '@storybook/react-vite'
 import '../src/index.css'
 
 const preview: Preview = {
+  decorators: [
+    (Story) => {
+      document.documentElement.classList.add('dark')
+      return (
+        <div style={{ background: '#0f172a', minHeight: '100vh', padding: '2rem' }}>
+          <Story />
+        </div>
+      )
+    },
+  ],
   parameters: {
     controls: {
       matchers: {

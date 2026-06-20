@@ -1,4 +1,4 @@
-import { useCallback, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 
 export interface ComboboxItem {
   id: string
@@ -6,93 +6,76 @@ export interface ComboboxItem {
   [key: string]: unknown
 }
 
-export type FetchStatus = 'idle' | 'loading' | 'success' | 'error'
-
-export interface UseComboboxOptions {
-  fetcher: (query: string) => Promise<ComboboxItem[]>
-  debounceMs?: number
-  onSelect?: (item: ComboboxItem) => void
+export interface UseComboboxOptions<T extends ComboboxItem> {
+  items: T[]
+  onSelect?: (item: T) => void
+  filterFn?: (item: T, query: string) => boolean
 }
 
-export interface UseComboboxReturn {
+export interface UseComboboxReturn<T extends ComboboxItem> {
   inputValue: string
-  items: ComboboxItem[]
+  filteredItems: T[]
   isOpen: boolean
-  status: FetchStatus
   activeIndex: number | null
-  selectedItem: ComboboxItem | null
+  selectedItem: T | null
+  inputId: string
   listboxId: string
   getOptionId: (index: number) => string
   handleInputChange: (value: string) => void
   handleKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
-  handleSelect: (item: ComboboxItem) => void
+  handleSelect: (item: T) => void
   handleBlur: () => void
   open: () => void
   close: () => void
 }
 
-export function useCombobox({
-  fetcher,
-  debounceMs = 300,
+const defaultFilter = <T extends ComboboxItem>(item: T, query: string) =>
+  item.label.toLowerCase().includes(query.toLowerCase())
+
+export function useCombobox<T extends ComboboxItem>({
+  items,
   onSelect,
-}: UseComboboxOptions): UseComboboxReturn {
+  filterFn = defaultFilter,
+}: UseComboboxOptions<T>): UseComboboxReturn<T> {
   const baseId = useId()
+  const inputId = `${baseId}-input`
   const listboxId = `${baseId}-listbox`
   const getOptionId = useCallback((i: number) => `${baseId}-option-${i}`, [baseId])
 
   const [inputValue, setInputValue] = useState('')
-  const [items, setItems] = useState<ComboboxItem[]>([])
   const [isOpen, setIsOpen] = useState(false)
-  const [status, setStatus] = useState<FetchStatus>('idle')
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
-  const [selectedItem, setSelectedItem] = useState<ComboboxItem | null>(null)
+  const [selectedItem, setSelectedItem] = useState<T | null>(null)
 
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const fetchSeq = useRef(0) // Cancels stale responses
+  const filteredItems = inputValue
+    ? items.filter((item) => filterFn(item, inputValue))
+    : items
 
-  const runFetch = useCallback(
-    (query: string) => {
-      if (debounceTimer.current) clearTimeout(debounceTimer.current)
+  const closeRef = useRef<() => void>(() => {})
 
-      if (!query.trim()) {
-        setItems([])
-        setIsOpen(false)
-        setStatus('idle')
-        return
-      }
+  const close = useCallback(() => {
+    setIsOpen(false)
+    setActiveIndex(null)
+  }, [])
 
-      const seq = ++fetchSeq.current
-      setStatus('loading')
-      setIsOpen(true)
+  // Keep the ref in sync outside render (avoids stale-closure in handleBlur's setTimeout)
+  useEffect(() => {
+    closeRef.current = close
+  })
 
-      debounceTimer.current = setTimeout(async () => {
-        try {
-          const result = await fetcher(query)
-          if (seq !== fetchSeq.current) return // stale response
-          setItems(result)
-          setStatus('success')
-          setActiveIndex(null)
-        } catch {
-          if (seq !== fetchSeq.current) return
-          setStatus('error')
-          setItems([])
-        }
-      }, debounceMs)
-    },
-    [fetcher, debounceMs],
-  )
+  const open = useCallback(() => {
+    if (filteredItems.length > 0) setIsOpen(true)
+  }, [filteredItems.length])
 
-  const handleInputChange = useCallback(
-    (value: string) => {
-      setInputValue(value)
-      setSelectedItem(null)
-      runFetch(value)
-    },
-    [runFetch],
-  )
+  const handleInputChange = useCallback((value: string) => {
+    setInputValue(value)
+    setSelectedItem(null)
+    setActiveIndex(null)
+    setIsOpen(value.length > 0)
+  }, [])
 
   const handleSelect = useCallback(
-    (item: ComboboxItem) => {
+    (item: T) => {
       setInputValue(item.label)
       setSelectedItem(item)
       setIsOpen(false)
@@ -102,41 +85,30 @@ export function useCombobox({
     [onSelect],
   )
 
-  const close = useCallback(() => {
-    setIsOpen(false)
-    setActiveIndex(null)
-  }, [])
-
-  const open = useCallback(() => {
-    if (items.length > 0) setIsOpen(true)
-  }, [items])
-
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
+      const count = filteredItems.length
+
       if (e.key === 'ArrowDown') {
         e.preventDefault()
-        if (!isOpen && items.length > 0) {
+        if (!isOpen && count > 0) {
           setIsOpen(true)
           setActiveIndex(0)
           return
         }
-        setActiveIndex((prev) =>
-          prev === null ? 0 : Math.min(prev + 1, items.length - 1),
-        )
+        setActiveIndex((prev) => (prev === null ? 0 : Math.min(prev + 1, count - 1)))
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
-        if (!isOpen && items.length > 0) {
+        if (!isOpen && count > 0) {
           setIsOpen(true)
-          setActiveIndex(items.length - 1)
+          setActiveIndex(count - 1)
           return
         }
-        setActiveIndex((prev) =>
-          prev === null ? items.length - 1 : Math.max(prev - 1, 0),
-        )
+        setActiveIndex((prev) => (prev === null ? count - 1 : Math.max(prev - 1, 0)))
       } else if (e.key === 'Enter') {
         e.preventDefault()
-        if (isOpen && activeIndex !== null && items[activeIndex]) {
-          handleSelect(items[activeIndex])
+        if (isOpen && activeIndex !== null && filteredItems[activeIndex]) {
+          handleSelect(filteredItems[activeIndex])
         }
       } else if (e.key === 'Escape') {
         close()
@@ -144,21 +116,21 @@ export function useCombobox({
         close()
       }
     },
-    [isOpen, items, activeIndex, handleSelect, close],
+    [isOpen, filteredItems, activeIndex, handleSelect, close],
   )
 
   const handleBlur = useCallback(() => {
-    // Small delay so clicks on options register before closing
-    setTimeout(() => close(), 150)
-  }, [close])
+    // Small delay so mousedown on options fires before blur closes the list
+    setTimeout(() => closeRef.current(), 150)
+  }, [])
 
   return {
     inputValue,
-    items,
+    filteredItems,
     isOpen,
-    status,
     activeIndex,
     selectedItem,
+    inputId,
     listboxId,
     getOptionId,
     handleInputChange,

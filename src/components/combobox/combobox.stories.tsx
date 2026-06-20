@@ -1,8 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { Combobox } from './combobox'
-import { useCombobox, type ComboboxItem } from './use-combobox'
+import { useState } from 'react'
+import {
+  ComboboxInput,
+  ComboboxLiveRegion,
+  ComboboxListbox,
+  ComboboxOption,
+  ComboboxRoot,
+} from './combobox'
+import type { ComboboxItem } from './use-combobox'
 
-// ─── Simulated async data ──────────────────────────────────────────────────
+// ─── Data ──────────────────────────────────────────────────────────────────
 
 const COUNTRIES: ComboboxItem[] = [
   { id: '1', label: 'Argentina' },
@@ -37,62 +44,82 @@ const COUNTRIES: ComboboxItem[] = [
   { id: '30', label: 'Uruguay' },
 ]
 
-function simulateFetch(query: string, delayMs = 600): Promise<ComboboxItem[]> {
-  return new Promise((resolve) =>
-    setTimeout(() => {
-      const q = query.toLowerCase()
-      resolve(COUNTRIES.filter((c) => c.label.toLowerCase().includes(q)))
-    }, delayMs),
-  )
-}
+// ─── Demo ──────────────────────────────────────────────────────────────────
 
-function simulateError(): Promise<ComboboxItem[]> {
-  return new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('Network error')), 600),
-  )
-}
-
-// ─── Wrappers ─────────────────────────────────────────────────────────────
-
-function DefaultDemo() {
-  const state = useCombobox({ fetcher: simulateFetch })
+function ComboboxDemo({
+  label = 'Search country',
+  placeholder = 'Type to search…',
+}: {
+  label?: string
+  placeholder?: string
+}) {
+  const [selected, setSelected] = useState<ComboboxItem | null>(null)
   return (
-    <div className="p-8">
-      <Combobox state={state} label="Search country" placeholder="Type to search…" />
-      {state.selectedItem && (
+    <div className="relative w-72 p-8">
+      <ComboboxRoot items={COUNTRIES} onSelect={setSelected}>
+        <label
+          htmlFor="demo-input"
+          className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          {label}
+        </label>
+        <ComboboxInput
+          id="demo-input"
+          placeholder={placeholder}
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+        />
+        <ComboboxListbox
+          label="Countries"
+          className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+        >
+          {(item, index) => (
+            <ComboboxOption
+              key={item.id}
+              item={item}
+              index={index}
+              className="cursor-pointer px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 aria-selected:bg-violet-600 aria-selected:text-white dark:text-gray-200 dark:hover:bg-gray-700"
+            >
+              {item.label}
+            </ComboboxOption>
+          )}
+        </ComboboxListbox>
+        <ComboboxLiveRegion />
+      </ComboboxRoot>
+      {selected && (
         <p className="mt-4 text-sm text-gray-500">
-          Selected: <strong>{state.selectedItem.label}</strong>
+          Selected: <strong>{selected.label}</strong>
         </p>
       )}
     </div>
   )
 }
 
-function ErrorDemo() {
-  const state = useCombobox({ fetcher: simulateError })
-  return (
-    <div className="p-8">
-      <Combobox state={state} label="Search (always errors)" placeholder="Type anything…" />
-    </div>
-  )
-}
+// ─── Meta ──────────────────────────────────────────────────────────────────
 
-// ─── Meta ─────────────────────────────────────────────────────────────────
-
-const meta: Meta = {
+const meta: Meta<typeof ComboboxDemo> = {
   title: 'Components/Combobox',
+  component: ComboboxDemo,
   parameters: {
     layout: 'centered',
     docs: {
       description: {
         component:
-          'Headless async combobox implementing [ARIA combobox pattern 1.2](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/). Focus stays in the input; `aria-activedescendant` tracks the highlighted option. Supports debounced async fetching with stale-response cancellation.',
+          'Headless combobox implementing the [WAI-ARIA Editable Combobox with List Autocomplete](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/) pattern. Focus stays in the input at all times; `aria-activedescendant` tracks the highlighted option. Compound-component API — bring your own styles.',
       },
     },
+  },
+  argTypes: {
+    label: { control: 'text', description: 'Visible label text above the input' },
+    placeholder: { control: 'text', description: 'Placeholder text inside the input' },
   },
 }
 
 export default meta
+type Story = StoryObj<typeof ComboboxDemo>
 
-export const Default: StoryObj = { render: () => <DefaultDemo /> }
-export const WithError: StoryObj = { render: () => <ErrorDemo /> }
+export const Default: Story = {
+  args: {
+    label: 'Search country',
+    placeholder: 'Type to search…',
+  },
+}
