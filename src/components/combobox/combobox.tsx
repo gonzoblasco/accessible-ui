@@ -53,7 +53,6 @@ type ComboboxInputProps = Omit<
   | 'onKeyDown'
   | 'onBlur'
   | 'autoComplete'
-  | 'id'
 >
 
 export function ComboboxInput(props: ComboboxInputProps) {
