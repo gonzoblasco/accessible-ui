@@ -5,7 +5,10 @@
   "keywords": ["react", "accessibility", "aria", "headless", "combobox", "modal", "tabs", "a11y"],
   "author": "Gonzalo Blasco",
   "license": "MIT",
-  "private": true,
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "exports": {
     "./combobox": {
