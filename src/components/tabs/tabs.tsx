@@ -85,7 +85,10 @@ function List({ children, className }: ListProps) {
       role="tablist"
       aria-orientation={orientation}
       onKeyDown={handleKeyDown}
-      className={className ?? 'flex border-b border-gray-200 dark:border-gray-700'}
+      className={className ?? (orientation === 'vertical'
+        ? 'flex flex-col border-r border-gray-200 dark:border-gray-700'
+        : 'flex border-b border-gray-200 dark:border-gray-700'
+      )}
     >
       {children}
     </div>

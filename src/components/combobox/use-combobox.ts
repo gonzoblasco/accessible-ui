@@ -104,7 +104,7 @@ export function useCombobox<T extends ComboboxItem>({
           setActiveIndex(count - 1)
           return
         }
-        setActiveIndex((prev) => (prev === null ? count - 1 : Math.max(prev - 1, 0)))
+        setActiveIndex((prev) => (prev === null ? count - 1 : (prev - 1 + count) % count))
       } else if (e.key === 'Enter') {
         e.preventDefault()
         if (isOpen && activeIndex !== null && filteredItems[activeIndex]) {

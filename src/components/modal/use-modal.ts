@@ -1,4 +1,4 @@
-import { useCallback, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 
 export interface UseModalReturn {
   isOpen: boolean
@@ -19,16 +19,25 @@ export function useModal(): UseModalReturn {
 
   const open = useCallback(() => {
     setIsOpen(true)
-    // Prevent body scroll while open
-    document.body.style.overflow = 'hidden'
   }, [])
 
   const close = useCallback(() => {
     setIsOpen(false)
-    document.body.style.overflow = ''
     // Return focus to trigger after paint
     requestAnimationFrame(() => triggerRef.current?.focus())
   }, [])
+
+  // Lock body scroll while open; cleanup on unmount
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isOpen])
 
   return { isOpen, open, close, titleId, descriptionId, triggerRef, dialogRef }
 }

@@ -30,9 +30,14 @@ export function useTabs({
   orientation = 'horizontal',
 }: UseTabsOptions): UseTabsReturn {
   const baseId = useId()
-  const [activeId, setActiveId] = useState(
-    defaultActiveId ?? tabs.find((t) => !t.disabled)?.id ?? tabs[0]?.id,
-  )
+  const [activeId, setActiveId] = useState(() => {
+    // Validate defaultActiveId: must exist and not be disabled
+    if (defaultActiveId) {
+      const target = tabs.find((t) => t.id === defaultActiveId)
+      if (target && !target.disabled) return defaultActiveId
+    }
+    return tabs.find((t) => !t.disabled)?.id ?? tabs[0]?.id
+  })
 
   const getTabId = useCallback((id: string) => `${baseId}-tab-${id}`, [baseId])
   const getPanelId = useCallback((id: string) => `${baseId}-panel-${id}`, [baseId])

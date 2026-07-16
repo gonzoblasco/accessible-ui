@@ -5,6 +5,7 @@ import {
   useRef,
   type ChangeEvent,
   type CSSProperties,
+  type FocusEvent,
   type HTMLAttributes,
   type InputHTMLAttributes,
   type LiHTMLAttributes,
@@ -63,10 +64,19 @@ export function ComboboxInput(props: ComboboxInputProps) {
     activeIndex,
     getOptionId,
     inputValue,
+    selectedItem,
     handleInputChange,
     handleKeyDown,
     handleBlur,
   } = useComboboxContext()
+
+  // Select all text on focus when an item was previously selected
+  const handleFocus = (e: FocusEvent<HTMLInputElement>) => {
+    if (selectedItem) {
+      // Use requestAnimationFrame to ensure the value is committed before selecting
+      requestAnimationFrame(() => e.target.select())
+    }
+  }
 
   return (
     <input
@@ -80,6 +90,7 @@ export function ComboboxInput(props: ComboboxInputProps) {
       autoComplete="off"
       value={inputValue}
       onChange={(e: ChangeEvent<HTMLInputElement>) => handleInputChange(e.target.value)}
+      onFocus={handleFocus}
       onKeyDown={handleKeyDown}
       onBlur={handleBlur}
     />
